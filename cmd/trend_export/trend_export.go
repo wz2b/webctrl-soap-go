@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	webctrl_soap_go "github.com/wz2b/webctrl-soap-go"
 	"log"
 	"time"
+	"webctrl-soap-go/pkg/webctrl_soap_go"
 )
 
 const LAYOUT = "2006-01-02T15:04:05"

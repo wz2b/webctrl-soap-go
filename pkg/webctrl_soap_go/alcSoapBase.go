@@ -18,8 +18,8 @@ var debugExec = false
 type alcEnvelope struct {
 	XMLName   xml.Name `xml:"soap:Envelope"`
 	XMLNsSoap string   `xml:"xmlns:soap,attr"`
-	XMLNsAlc  string   `xml:"xmlns:alcsoap,attr"`
-	Body      alcBody
+	XMLNsAlc string   `xml:"xmlns:alcsoap,attr"`
+	Body     alcBody
 }
 
 type alcBody struct {
