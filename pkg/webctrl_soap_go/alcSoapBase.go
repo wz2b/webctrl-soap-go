@@ -51,6 +51,8 @@ type TrendService struct {
 	User     string
 	password string
 	Endpoint string
+
+	ChunkSize int
 }
 
 func NewSoapService(host string, user string, password string) *SoapService {
@@ -60,7 +62,7 @@ func NewSoapService(host string, user string, password string) *SoapService {
 
 	return &SoapService{
 		Eval:  EvalService{Endpoint: host + "_common/webservices/Eval", User: user, password: password},
-		Trend: TrendService{Endpoint: host + "_common/webservices/Trend", User: user, password: password},
+		Trend: TrendService{Endpoint: host + "_common/webservices/Trend", User: user, password: password, ChunkSize: 2000},
 	}
 }
 

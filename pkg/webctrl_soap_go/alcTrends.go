@@ -44,7 +44,7 @@ type TrendPoint struct {
 	Value       float32
 }
 
-func (this *TrendService) GetTrendChunk(gql string, startTime time.Time, endTime time.Time, fromStart bool, maxRecords int) ([]TrendPoint, error) {
+func (this *TrendService) getTrendDataChunk(gql string, startTime time.Time, endTime time.Time, fromStart bool, maxRecords int) ([]TrendPoint, error) {
 	request := alcEnvelope{
 		XMLNsSoap: "http://schemas.xmlsoap.org/soap/envelope/",
 		XMLNsAlc:  "http://soap.core.green.controlj.com",
@@ -118,3 +118,5 @@ func (this *TrendService) GetTrendChunk(gql string, startTime time.Time, endTime
 
 	return points, nil
 }
+
+
