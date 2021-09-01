@@ -3,24 +3,26 @@ package main
 import (
 	"errors"
 	"flag"
+	"github.com/Songmu/prompter"
 	"time"
 )
 
 type ConfigType struct {
-	user     string
-	password string
-	server   string
-	startStr string
-	stopStr  string
-	verbose  bool
-	start    time.Time
-	stop     time.Time
-	args     []string
+	user            string
+	password        string
+	credentialsFile string
+	server          string
+	startStr        string
+	stopStr         string
+	verbose         bool
+	start           time.Time
+	stop            time.Time
+	args            []string
 }
 
-func processArgs() (ConfigType, error) {
-	var config ConfigType
+func processArgs() (config ConfigType, err error) {
 
+	flag.StringVar(&config.credentialsFile, "creds", "", "WebCTRL credentials file - file must be one line containing user:password")
 	flag.StringVar(&config.user, "user", "", "WebCTRL username (must have SOAP privileges)")
 	flag.StringVar(&config.password, "password", "", "WebCTRL password")
 	flag.StringVar(&config.server, "server", "", "URL to WebCTRL server")
@@ -29,20 +31,52 @@ func processArgs() (ConfigType, error) {
 	flag.BoolVar(&config.verbose, "v", false, "Display extra information")
 
 	// TODO: make a way to specify the list of trends from a file
-	// TODO: make a way to specify the server credentials from a file
 
 	if !flag.Parsed() {
 		flag.Parse()
 		config.args = flag.Args()
 	}
-	var err error
+
+	//
+	// If a credentials file is specified, load it but user or password on the command
+	// line will override
+	//
+	if config.credentialsFile != "" {
+		usernameFromFile, passwordFromFile, loadCredentialsErr := loadCredentialsFromFile(config.credentialsFile)
+		if loadCredentialsErr != nil {
+			err = loadCredentialsErr
+			return
+		}
+
+		if config.user == "" {
+			config.user = usernameFromFile
+		}
+
+		if config.password == "" {
+			config.password = passwordFromFile
+		}
+	}
 
 	if config.user == "" {
-		return config, errors.New("user is a required argument")
+		// No username specified either in a credentials file or on the command line.
+		// Try prompting for one.
+		config.user = prompter.Prompt("WebCTRL username", "")
+		if config.user == "" {
+			// Still no username - error out
+			err = errors.New("username must be specified either on the command line or in a credentials file")
+			return
+		}
 	}
 
 	if config.password == "" {
-		return config, errors.New("password is a required argument")
+		// No password specified either in a credentials file or on the command line.
+		// Try prompting for one.
+		config.password = prompter.Password("WebCTRL password")
+		if config.password == "" {
+			// Still no password - error out
+			err = errors.New("password must be specified either on the command line or in a credentials file")
+			return
+		}
 	}
 
 	if config.server == "" {
@@ -70,5 +104,5 @@ func processArgs() (ConfigType, error) {
 	}
 
 	config.args = flag.Args()
-	return config, nil
+	return
 }
