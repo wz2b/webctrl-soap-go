@@ -7,15 +7,15 @@ import (
 )
 
 type ConfigType struct {
-	user string
+	user     string
 	password string
-	server string
+	server   string
 	startStr string
-	stopStr string
-	verbose bool
-	start time.Time
-	stop time.Time
-	args []string
+	stopStr  string
+	verbose  bool
+	start    time.Time
+	stop     time.Time
+	args     []string
 }
 
 func processArgs() (ConfigType, error) {
@@ -27,6 +27,9 @@ func processArgs() (ConfigType, error) {
 	flag.StringVar(&config.startStr, "start", "", "Start time (inclusive)")
 	flag.StringVar(&config.stopStr, "stop", "", "End time (exclusive)")
 	flag.BoolVar(&config.verbose, "v", false, "Display extra information")
+
+	// TODO: make a way to specify the list of trends from a file
+	// TODO: make a way to specify the server credentials from a file
 
 	if !flag.Parsed() {
 		flag.Parse()

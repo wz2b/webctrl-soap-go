@@ -21,24 +21,26 @@ func main() {
 
 	alc := webctrl_soap_go.NewSoapService(config.server, config.user, config.password)
 
-	alc.Trend.ChunkSize = 100
+	alc.Trend.ChunkSize = 1000
 
-	for _, arg := range config.args {
-		data, err := alc.Trend.GetTrendData(arg, config.start, config.stop)
-	loop:
-		for {
-			select {
-			case d := <-data:
-				if d != nil {
-					fmt.Printf("%s\t%f\n", d.Time.Local(), d.Value)
-				}
+	//for _, arg := range config.args {
+	//	data, err := alc.Trend.GetTrendData(arg, config.start, config.stop)
+	//loop:
+	//	for {
+	//		select {
+	//		case d := <-data:
+	//			if d != nil {
+	//				fmt.Printf("%s\t%f\n", d.Time.Local(), d.Value)
+	//			}
+	//
+	//		case e := <-err:
+	//			if e != nil {
+	//				log.Print(e)
+	//			}
+	//			break loop
+	//		}
+	//	}
+	//}
 
-			case e := <-err:
-				if e != nil {
-					log.Print(e)
-				}
-				break loop
-			}
-		}
-	}
+	alc.Trend.MergeTendData(config.args, config.start, config.stop)
 }
