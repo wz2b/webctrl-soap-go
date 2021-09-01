@@ -11,6 +11,7 @@ type ConfigType struct {
 	user            string
 	password        string
 	credentialsFile string
+	configFile      string
 	server          string
 	startStr        string
 	stopStr         string
@@ -21,7 +22,6 @@ type ConfigType struct {
 }
 
 func processArgs() (config ConfigType, err error) {
-
 	flag.StringVar(&config.credentialsFile, "creds", "", "WebCTRL credentials file - file must be one line containing user:password")
 	flag.StringVar(&config.user, "user", "", "WebCTRL username (must have SOAP privileges)")
 	flag.StringVar(&config.password, "password", "", "WebCTRL password")
@@ -29,6 +29,7 @@ func processArgs() (config ConfigType, err error) {
 	flag.StringVar(&config.startStr, "start", "", "Start time (inclusive)")
 	flag.StringVar(&config.stopStr, "stop", "", "End time (exclusive)")
 	flag.BoolVar(&config.verbose, "v", false, "Display extra information")
+	flag.StringVar(&config.configFile, "config", "", "YAML configuration file")
 
 	// TODO: make a way to specify the list of trends from a file
 
@@ -103,6 +104,7 @@ func processArgs() (config ConfigType, err error) {
 		}
 	}
 
+	// Capture the remaining command line arguments
 	config.args = flag.Args()
 	return
 }
