@@ -22,6 +22,7 @@ type ConfigType struct {
 }
 
 func processArgs() (config ConfigType, err error) {
+
 	flag.StringVar(&config.credentialsFile, "creds", "", "WebCTRL credentials file - file must be one line containing user:password")
 	flag.StringVar(&config.user, "user", "", "WebCTRL username (must have SOAP privileges)")
 	flag.StringVar(&config.password, "password", "", "WebCTRL password")

@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-	"webctrl-soap-go/pkg/webctrl_soap_go"
+	"strings"
+	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
 )
 
 const LAYOUT = "2006-01-02T15:04:05"
@@ -19,7 +20,7 @@ func main() {
 		fmt.Printf("# End time is %s (%d)\n", config.stop.Local(), config.stop.Unix())
 	}
 
-	alc := webctrl_soap_go.NewSoapService(config.server, config.user, config.password)
+	alc := alcsoap.NewSoapService(config.server, config.user, config.password)
 
 	alc.Trend.ChunkSize = 1000
 
@@ -42,5 +43,27 @@ func main() {
 	//	}
 	//}
 
-	alc.Trend.MergeTendData(config.args, config.start, config.stop)
+	fields := config.args
+	var records = make(chan *alcsoap.TrendPoint)
+	go alc.Trend.MergeTendData(fields, config.start, config.stop, records)
+
+	var grouped = make(chan *alcsoap.TrendPointGroup)
+	go alcsoap.GroupByTime(records, grouped)
+
+	fmt.Printf("\"time\"\t\"" + strings.Join(fields, "\"\t\"") + "\"\n")
+
+	for group := <-grouped; group != nil; group = <-grouped {
+		fmt.Printf("\"%s\"\t", group.Time.Local().Format("2006-01-02 15:04:05"))
+
+		for _, field := range fields {
+			value, ok := group.Points[field]
+			if ok {
+				fmt.Printf("%f\t", value)
+			} else {
+				fmt.Printf("\t")
+			}
+		}
+
+		fmt.Println()
+	}
 }

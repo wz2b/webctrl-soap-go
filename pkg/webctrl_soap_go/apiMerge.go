@@ -1,7 +1,6 @@
 package webctrl_soap_go
 
 import (
-	"fmt"
 	"log"
 	"time"
 )
@@ -53,26 +52,28 @@ func (list *sortedList) popFirst() *listItem {
 	return item
 }
 
-func (this *TrendService) MergeTendData(gqlPaths []string, startTime time.Time, endTime time.Time) {
+func (this *TrendService) MergeTendData(gqlPaths []string, startTime time.Time, endTime time.Time, output chan<- *TrendPoint) {
 	var list = &sortedList{head: nil}
-
+	//
+	//var dataCh = make(chan *TrendPoint)
+	//var errCh = make(chan error)
 	//
 	// Populate the list with the first value of every trend
 	//
 	for _, gql := range gqlPaths {
-		dataChannel, errorChannel := this.GetTrendData(gql, startTime, endTime)
+		dataCh, errCh := this.GetTrendData(gql, startTime, endTime)
 
 		// get first data point
-		firstPoint := <-dataChannel
+		firstPoint := <-dataCh
 
 		// non-blocking check for errors
-		eatError(errorChannel)
+		eatError(errCh)
 
 		if firstPoint != nil {
 			//fmt.Printf("Insert %s\n", firstPoint.Time.Local())
 			list.insert(&channelSpec{
-				dataChannel:  dataChannel,
-				errorChannel: errorChannel,
+				dataChannel:  dataCh,
+				errorChannel: errCh,
 				gql:          gql,
 				firstValue:   firstPoint,
 			})
@@ -83,7 +84,7 @@ func (this *TrendService) MergeTendData(gqlPaths []string, startTime time.Time, 
 		thisChannel := item.item
 		value := thisChannel.firstValue
 
-		fmt.Printf("%s %s %f\n", thisChannel.gql, value.Time.Local(), value.Value)
+		output <- value
 
 		nextValue := <-thisChannel.dataChannel
 		//fmt.Printf("Pop out %s\n", nextValue.Time.Local())
@@ -94,6 +95,7 @@ func (this *TrendService) MergeTendData(gqlPaths []string, startTime time.Time, 
 			list.insert(thisChannel)
 		}
 	}
+	output <- nil
 }
 
 func eatError(errorChannel chan error) {

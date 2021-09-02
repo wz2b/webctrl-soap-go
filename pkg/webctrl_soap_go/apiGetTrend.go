@@ -11,49 +11,48 @@ import (
 // an empty array.
 func (this *TrendService) getTrendDataChunks(gql string, startTime time.Time, endTime time.Time) (chan []TrendPoint, chan error) {
 	chunkSize := this.ChunkSize // take a snapshot of chunk size in case somebody changes it while we're paging
-
-	dc := make(chan []TrendPoint)
-	ec := make(chan error)
-
 	sFrom := startTime
 
 	chunkCount := 1
 
+	outData := make(chan []TrendPoint)
+	outErrors := make(chan error)
+
 	go func() {
-		defer close(dc)
-		defer close(ec)
+		defer close(outData)
+		defer close(outErrors)
 	getChunks:
 		for getMore, pointsRead := true, 0; getMore; getMore = pointsRead == chunkSize {
 			chunkCount++
 
-			trndata, err := this.getTrendDataChunk(gql, sFrom, endTime, true, chunkSize)
-			pointsRead = len(trndata)
+			// This is a synchronous SOAP call
+			trnData, err := this.getTrendDataChunk(gql, sFrom, endTime, true, chunkSize)
+			pointsRead = len(trnData)
 
 			if err != nil {
 				// Signal user with error
-				ec <- err
+				outErrors <- err
 			}
 
-			if len(trndata) > 0 {
+			if len(trnData) > 0 {
 				// Signal user with data
-				dc <- trndata
+				outData <- trnData
 			}
 
 			// Any time we get less than a full chunk (including zero samples) it means
 			// that there is no more data
-			if len(trndata) < chunkSize {
+			if len(trnData) < chunkSize {
 				break getChunks
 			}
 
-			lastRecord := trndata[len(trndata)-1]
+			lastRecord := trnData[len(trnData)-1]
 			newStartTime := lastRecord.Time.Add(1 * time.Second)
 			sFrom = newStartTime
 		}
-		dc <- []TrendPoint{}
-
+		outData <- []TrendPoint{}
 	}()
 
-	return dc, ec
+	return outData, outErrors
 }
 
 // GetTrendData retrieves data from the SOAP server in pages.
@@ -63,36 +62,34 @@ func (this *TrendService) getTrendDataChunks(gql string, startTime time.Time, en
 // Once no more data is available, the item will be closed such that the firstValue and subsequent fetches
 // from the item will return nil.
 func (this *TrendService) GetTrendData(gql string, startTime time.Time, endTime time.Time) (chan *TrendPoint, chan error) {
-	outputDataChannel := make(chan *TrendPoint)
-	outputErrorChannel := make(chan error)
-
-	upstreamDataChannel, upstreamErrorChannel := this.getTrendDataChunks(gql, startTime, endTime)
+	dataCh := make(chan *TrendPoint)
+	errorCh := make(chan error)
+	chunkDataChannel, chunkErrorChannel := this.getTrendDataChunks(gql, startTime, endTime)
 
 	go func() {
-		defer close(outputDataChannel)
-		defer close(outputErrorChannel)
+		defer close(dataCh)
+		defer close(errorCh)
 	loop:
 		for {
 			select {
-			case data := <-upstreamDataChannel:
+			case data := <-chunkDataChannel:
 				if data == nil || len(data) == 0 {
 					break loop
 				} else {
 					for _, value := range data {
 						newValue := value
-						outputDataChannel <- &newValue
+						dataCh <- &newValue
 					}
 				}
 
-			case err := <-upstreamErrorChannel:
-				outputErrorChannel <- err
+			case err := <-chunkErrorChannel:
+				errorCh <- err
 				break loop
 			}
 		}
 
-		outputDataChannel <- nil
-
+		dataCh <- nil
 	}()
 
-	return outputDataChannel, outputErrorChannel
+	return dataCh, errorCh
 }
