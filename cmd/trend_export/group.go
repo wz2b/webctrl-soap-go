@@ -1,13 +1,16 @@
-package webctrl_soap_go
+package main
 
-import "time"
+import (
+	"time"
+	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
+)
 
 type TrendPointGroup struct {
 	Time   *time.Time
 	Points map[string]float32
 }
 
-func GroupByTime(recordsIn <-chan *TrendPoint, recordsOut chan<- *TrendPointGroup) {
+func GroupByTime(recordsIn <-chan *alcsoap.TrendPoint, recordsOut chan<- *TrendPointGroup) {
 	var group *TrendPointGroup = nil
 
 	for record := <-recordsIn; record != nil; record = <-recordsIn {

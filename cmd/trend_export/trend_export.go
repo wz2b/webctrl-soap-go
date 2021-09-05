@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
 )
 
@@ -20,47 +19,54 @@ func main() {
 		fmt.Printf("# End time is %s (%d)\n", config.stop.Local(), config.stop.Unix())
 	}
 
-	alc := alcsoap.NewSoapService(config.server, config.user, config.password)
-
-	alc.Trend.ChunkSize = 1000
-
-	//for _, arg := range config.args {
-	//	data, err := alc.Trend.GetTrendData(arg, config.start, config.stop)
-	//loop:
-	//	for {
-	//		select {
-	//		case d := <-data:
-	//			if d != nil {
-	//				fmt.Printf("%s\t%f\n", d.Time.Local(), d.Value)
-	//			}
 	//
-	//		case e := <-err:
-	//			if e != nil {
-	//				log.Print(e)
-	//			}
-	//			break loop
-	//		}
-	//	}
-	//}
+	// Make a flattened list of servers
+	//
+	type flat struct {
+		server   ServerConfig
+		location TrendLocation
+	}
 
-	fields := config.args
-	var records = make(chan *alcsoap.TrendPoint)
-	go alc.Trend.MergeTendData(fields, config.start, config.stop, records)
+	var flattened []flat
 
-	var grouped = make(chan *alcsoap.TrendPointGroup)
-	go alcsoap.GroupByTime(records, grouped)
+	for _, server := range config.ConfigFile.Servers {
+		for _, location := range server.Locations {
+			flattened = append(flattened, flat{server, location})
+		}
+	}
 
-	fmt.Printf("\"time\"\t\"" + strings.Join(fields, "\"\t\"") + "\"\n")
+	//
+	// Output the headers
+	//
+	fmt.Print("\"time\"\t\"")
+	for _, flattened := range flattened {
+		fmt.Print(", \"")
+		if len(flattened.location.Location) > 0 {
+			fmt.Print(flattened.location.Name)
+		} else {
+			fmt.Print(flattened.location.Location)
+		}
+	}
+	fmt.Println("\"")
+
+	//
+	// Run the trends
+	//
+	records := make(chan *alcsoap.TrendPoint)
+	go MergeSortTrendData(config.ConfigFile.Servers, config.start, config.stop, records)
+
+	var grouped = make(chan *TrendPointGroup)
+	go GroupByTime(records, grouped)
 
 	for group := <-grouped; group != nil; group = <-grouped {
 		fmt.Printf("\"%s\"\t", group.Time.Local().Format("2006-01-02 15:04:05"))
 
-		for _, field := range fields {
-			value, ok := group.Points[field]
+		for _, loc := range flattened {
+			value, ok := group.Points[loc.location.Location]
 			if ok {
 				fmt.Printf("%f\t", value)
 			} else {
-				fmt.Printf("\t")
+				fmt.Printf("-\t")
 			}
 		}
 
