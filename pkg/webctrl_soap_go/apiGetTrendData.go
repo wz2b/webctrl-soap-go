@@ -4,10 +4,15 @@ import (
 	"time"
 )
 
+type TrendSource struct {
+	Source   *TrendService
+	Location string
+}
+
 type TrendEvent struct {
-	Source *TrendService
+	Source *TrendSource
 	Data   *TrendPoint
-	err    error
+	Err    error
 }
 
 // GetTrendData gets trend data, paging if necessary, and returns a channel that emits a stream
@@ -20,29 +25,26 @@ func (this *TrendService) GetTrendData(gql string, startTime time.Time, endTime 
 	chunkSize := this.ChunkSize // take a snapshot of chunk size in case somebody changes it while we're paging
 	sFrom := startTime
 
-	chunkCount := 1
+	source := &TrendSource{Source: this, Location: gql}
 
 	events := make(chan *TrendEvent)
 
 	go func() {
-		defer close(events)
 	getChunks:
 		for getMore, pointsRead := true, 0; getMore; getMore = pointsRead == chunkSize {
-			chunkCount++
-
 			// This is a synchronous SOAP call
 			trnData, err := this.getTrendDataChunk(gql, sFrom, endTime, true, chunkSize)
 			pointsRead = len(trnData)
 
 			if err != nil {
 				// Signal user with error
-				events <- &TrendEvent{Data: nil, err: err, Source: this}
+				events <- &TrendEvent{Data: nil, Err: err, Source: source}
 			}
 
 			if len(trnData) > 0 {
 				// Signal user with data
 				for _, point := range trnData {
-					events <- &TrendEvent{Data: &point, err: nil, Source: this}
+					events <- &TrendEvent{Data: &point, Err: nil, Source: source}
 				}
 			}
 
@@ -56,8 +58,7 @@ func (this *TrendService) GetTrendData(gql string, startTime time.Time, endTime 
 			newStartTime := lastRecord.Time.Add(1 * time.Second)
 			sFrom = newStartTime
 		}
-		events <- nil
+		close(events)
 	}()
-
 	return events
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
 )
 
@@ -22,12 +23,7 @@ func main() {
 	//
 	// Make a flattened list of servers
 	//
-	type flat struct {
-		server   ServerConfig
-		location TrendLocation
-	}
-
-	var flattened []flat
+	var sources []*alcsoap.TrendSource
 
 	//
 	// Set up the server streams (one per server) while at the same time
@@ -42,10 +38,10 @@ func main() {
 			locations[k] = location.Location
 		}
 
-		serverStreams[i] = service.Trend.MergeSortTrends(config.start, config.stop, locations)
+		serverStreams[i] = service.Trend.GetMutlipleTrends(config.start, config.stop, locations)
 
 		for _, location := range server.Locations {
-			flattened = append(flattened, flat{server, location})
+			sources = append(sources, &alcsoap.TrendSource{&service.Trend, location.Location})
 		}
 	}
 
@@ -53,12 +49,12 @@ func main() {
 	// Output the headers
 	//
 	fmt.Print("\"time\"\t\"")
-	for _, flattened := range flattened {
+	for _, source := range sources {
 		fmt.Print(", \"")
-		if len(flattened.location.Location) > 0 {
-			fmt.Print(flattened.location.Name)
+		if len(source.Location) > 0 {
+			fmt.Print(source.Location)
 		} else {
-			fmt.Print(flattened.location.Location)
+			fmt.Print(source.Location)
 		}
 	}
 	fmt.Println("\"")
@@ -67,23 +63,31 @@ func main() {
 	// Run the trends
 	//
 
-	merged := alcsoap.MergeSortMultipleTrends(serverStreams)
+	merged := alcsoap.MergeTrends(serverStreams)
 
-	var grouped = make(chan *TrendPointGroup)
-	go GroupByTime(merged, grouped)
+	grouped := alcsoap.GroupByTime(merged)
 
-	for group := <-grouped; group != nil; group = <-grouped {
-		fmt.Printf("\"%s\"\t", group.Time.Local().Format("2006-01-02 15:04:05"))
+	for group := range grouped {
+		if group != nil && group.Trends != nil && len(group.Trends) > 0 {
 
-		for _, loc := range flattened {
-			value, ok := group.Events[loc.location.Location]
-			if ok {
-				fmt.Printf("%f\t", value)
-			} else {
-				fmt.Printf("-\t")
+			sorted := alcsoap.SortGroup(group.Trends, sources)
+			fmt.Fprintf(os.Stderr, "Sorted list has %d entries\n", len(sorted))
+
+			fmt.Printf("\"%s\"\t", group.Time.Format("2006-01-02 15:04:05"))
+
+			for _, event := range sorted {
+				if event != nil {
+					fmt.Printf("\t%f", event.Data.Value)
+				} else {
+					fmt.Printf("\t-")
+				}
+
 			}
-		}
 
-		fmt.Println()
+			fmt.Println()
+
+		} else {
+			fmt.Printf("# empty group\n")
+		}
 	}
 }

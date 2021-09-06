@@ -25,10 +25,10 @@ type ServerConfig struct {
 	Url       string
 	Login     string
 	Password  string
-	Locations []TrendLocation
+	Locations []TrendLocationConfig
 }
 
-type TrendLocation struct {
+type TrendLocationConfig struct {
 	Location      string
 	Name          string
 	Interpolation string
