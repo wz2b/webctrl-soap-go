@@ -38,11 +38,10 @@ type alcGetTrendDataReturn struct {
 }
 
 type TrendPoint struct {
-	Location    string
 	Time        *time.Time
 	TimeString  string
 	ValueString string
-	Value       float32
+	Value       float64
 }
 
 func (this *TrendService) getTrendDataChunk(gql string, startTime time.Time, endTime time.Time, fromStart bool, maxRecords int) ([]TrendPoint, error) {
@@ -108,11 +107,10 @@ func (this *TrendService) getTrendDataChunk(gql string, startTime time.Time, end
 		}
 
 		point := TrendPoint{
-			Location:    gql,
 			TimeString:  timeString,
 			ValueString: valueString,
 			Time:        &tm,
-			Value:       float32(val),
+			Value:       float64(val),
 		}
 
 		points = append(points, point)

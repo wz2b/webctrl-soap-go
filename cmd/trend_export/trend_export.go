@@ -29,7 +29,21 @@ func main() {
 
 	var flattened []flat
 
-	for _, server := range config.ConfigFile.Servers {
+	//
+	// Set up the server streams (one per server) while at the same time
+	// constructing a flat list of trend locations
+	//
+	serverStreams := make([]<-chan *alcsoap.TrendEvent, len(config.ConfigFile.Servers))
+	for i, server := range config.ConfigFile.Servers {
+		service := alcsoap.NewSoapService(server.Url, server.Login, server.Password)
+
+		var locations = make([]string, len(server.Locations))
+		for k, location := range server.Locations {
+			locations[k] = location.Location
+		}
+
+		serverStreams[i] = service.Trend.MergeSortTrends(config.start, config.stop, locations)
+
 		for _, location := range server.Locations {
 			flattened = append(flattened, flat{server, location})
 		}
@@ -52,17 +66,17 @@ func main() {
 	//
 	// Run the trends
 	//
-	records := make(chan *alcsoap.TrendPoint)
-	go MergeSortTrendData(config.ConfigFile.Servers, config.start, config.stop, records)
+
+	merged := alcsoap.MergeSortMultipleTrends(serverStreams)
 
 	var grouped = make(chan *TrendPointGroup)
-	go GroupByTime(records, grouped)
+	go GroupByTime(merged, grouped)
 
 	for group := <-grouped; group != nil; group = <-grouped {
 		fmt.Printf("\"%s\"\t", group.Time.Local().Format("2006-01-02 15:04:05"))
 
 		for _, loc := range flattened {
-			value, ok := group.Points[loc.location.Location]
+			value, ok := group.Events[loc.location.Location]
 			if ok {
 				fmt.Printf("%f\t", value)
 			} else {

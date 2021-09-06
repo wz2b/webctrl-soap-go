@@ -18,8 +18,8 @@ var debugExec = false
 type alcEnvelope struct {
 	XMLName   xml.Name `xml:"soap:Envelope"`
 	XMLNsSoap string   `xml:"xmlns:soap,attr"`
-	XMLNsAlc string   `xml:"xmlns:alcsoap,attr"`
-	Body     alcBody
+	XMLNsAlc  string   `xml:"xmlns:alcsoap,attr"`
+	Body      alcBody
 }
 
 type alcBody struct {
@@ -37,6 +37,7 @@ func basicAuth(username, password string) string {
 }
 
 type SoapService struct {
+	Name  string
 	Eval  EvalService
 	Trend TrendService
 }
@@ -45,6 +46,8 @@ type EvalService struct {
 	User     string
 	password string
 	Endpoint string
+
+	parent *SoapService
 }
 
 type TrendService struct {
@@ -52,6 +55,7 @@ type TrendService struct {
 	password string
 	Endpoint string
 
+	parent    *SoapService
 	ChunkSize int
 }
 
@@ -60,10 +64,16 @@ func NewSoapService(host string, user string, password string) *SoapService {
 		host = host + "/"
 	}
 
-	return &SoapService{
+	service := &SoapService{
+		Name:  host,
 		Eval:  EvalService{Endpoint: host + "_common/webservices/Eval", User: user, password: password},
 		Trend: TrendService{Endpoint: host + "_common/webservices/Trend", User: user, password: password, ChunkSize: 2000},
 	}
+
+	service.Eval.parent = service
+	service.Trend.parent = service
+
+	return service
 }
 
 func call(endpoint string, username string, password string, payload string) ([]byte, error) {

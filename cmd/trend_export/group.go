@@ -7,22 +7,22 @@ import (
 
 type TrendPointGroup struct {
 	Time   *time.Time
-	Points map[string]float32
+	Events map[string]TrendEvent
 }
 
-func GroupByTime(recordsIn <-chan *alcsoap.TrendPoint, recordsOut chan<- *TrendPointGroup) {
+func GroupByTime(events <-chan *alcsoap.TrendEvent, recordsOut chan<- *TrendPointGroup) {
 	var group *TrendPointGroup = nil
 
-	for record := <-recordsIn; record != nil; record = <-recordsIn {
+	for record := <-events; record != nil; record = <-events {
 		if group == nil {
-			group = &TrendPointGroup{Time: record.Time}
-			group.Points = map[string]float32{record.Location: record.Value}
+			group = &TrendPointGroup{Time: record.Data.Time}
+			group.Events = map[string]float32{record.Location: record.Value}
 		} else if group.Time.Equal(*record.Time) {
-			group.Points[record.Location] = record.Value
+			group.Events[record.Location] = record.Value
 		} else {
 			recordsOut <- group
 			group = &TrendPointGroup{Time: record.Time}
-			group.Points = map[string]float32{record.Location: record.Value}
+			group.Events = map[string]float32{record.Location: record.Value}
 		}
 	}
 
