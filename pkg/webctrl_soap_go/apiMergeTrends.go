@@ -1,9 +1,13 @@
 package webctrl_soap_go
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"os"
+)
 
 func MergeTrends(channels []<-chan *TrendEvent) <-chan *TrendEvent {
-	var list = &sortedList{head: nil}
+	var list = NewSortedTrendList()
 
 	var output = make(chan *TrendEvent)
 
@@ -29,6 +33,7 @@ func MergeTrends(channels []<-chan *TrendEvent) <-chan *TrendEvent {
 		//
 		for item := list.popFirst(); item != nil; item = list.popFirst() {
 			event := item.event
+			//fmt.Printf("Emitting %s %s\n", event.Data.Time, event.Source.Location)
 			output <- event
 
 			// Fetch the next sample off of the same channel this data point came from
@@ -36,11 +41,13 @@ func MergeTrends(channels []<-chan *TrendEvent) <-chan *TrendEvent {
 
 			// If the result of the last fetch was nil that means there is no more.
 			// Otherwise, take this new sample and insert it into the list (merge sorted
-			// to the corret place)
+			// to the correct place)
 			if nextEvent != nil {
-				if event.Err != nil {
-					output <- &TrendEvent{Source: event.Source, Data: nil, Err: event.Err}
+				if nextEvent.Err != nil {
+					fmt.Fprintf(os.Stderr, "Ending stream %s on error", event.Source.Location)
+					output <- &TrendEvent{Source: nextEvent.Source, Data: nil, Err: nextEvent.Err}
 				} else {
+					//fmt.Printf("Inserting %s %s\n", nextEvent.Data.Time, nextEvent.Source.Location)
 					list.insert(nextEvent, item.dataChannel)
 				}
 			}

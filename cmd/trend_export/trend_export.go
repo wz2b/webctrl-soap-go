@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
 )
 
@@ -30,6 +29,7 @@ func main() {
 	// constructing a flat list of trend locations
 	//
 	serverStreams := make([]<-chan *alcsoap.TrendEvent, len(config.ConfigFile.Servers))
+	fmt.Printf("There are %d servers\n", len(config.ConfigFile.Servers))
 	for i, server := range config.ConfigFile.Servers {
 		service := alcsoap.NewSoapService(server.Url, server.Login, server.Password)
 
@@ -38,7 +38,7 @@ func main() {
 			locations[k] = location.Location
 		}
 
-		serverStreams[i] = service.Trend.GetMutlipleTrends(config.start, config.stop, locations)
+		serverStreams[i] = service.Trend.GetMultipleTrends(config.start, config.stop, locations)
 
 		for _, location := range server.Locations {
 			sources = append(sources, &alcsoap.TrendSource{&service.Trend, location.Location})
@@ -48,9 +48,9 @@ func main() {
 	//
 	// Output the headers
 	//
-	fmt.Print("\"time\"\t\"")
+	fmt.Print("\"time")
 	for _, source := range sources {
-		fmt.Print(", \"")
+		fmt.Print("\", \"")
 		if len(source.Location) > 0 {
 			fmt.Print(source.Location)
 		} else {
@@ -64,19 +64,16 @@ func main() {
 	//
 
 	merged := alcsoap.MergeTrends(serverStreams)
-
 	grouped := alcsoap.GroupByTime(merged)
 
 	for group := range grouped {
 		if group != nil && group.Trends != nil && len(group.Trends) > 0 {
 
 			sorted := alcsoap.SortGroup(group.Trends, sources)
-			fmt.Fprintf(os.Stderr, "Sorted list has %d entries\n", len(sorted))
-
 			fmt.Printf("\"%s\"\t", group.Time.Format("2006-01-02 15:04:05"))
 
 			for _, event := range sorted {
-				if event != nil {
+				if event != nil && event.Data != nil {
 					fmt.Printf("\t%f", event.Data.Value)
 				} else {
 					fmt.Printf("\t-")
