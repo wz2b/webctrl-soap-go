@@ -5,8 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -56,7 +58,7 @@ type TrendService struct {
 	Endpoint string
 
 	parent    *SoapService
-	ChunkSize int
+	chunkSize int
 }
 
 func NewSoapService(host string, user string, password string) *SoapService {
@@ -67,7 +69,7 @@ func NewSoapService(host string, user string, password string) *SoapService {
 	service := &SoapService{
 		Name:  host,
 		Eval:  EvalService{Endpoint: host + "_common/webservices/Eval", User: user, password: password},
-		Trend: TrendService{Endpoint: host + "_common/webservices/Trend", User: user, password: password, ChunkSize: 2000},
+		Trend: TrendService{Endpoint: host + "_common/webservices/Trend", User: user, password: password, chunkSize: 2000},
 	}
 
 	service.Eval.parent = service
@@ -98,6 +100,8 @@ func call(endpoint string, username string, password string, payload string) ([]
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
+		bodyBytes, _ := ioutil.ReadAll(response.Body)
+		fmt.Fprintf(os.Stderr, string(bodyBytes))
 		return nil, errors.New(response.Status)
 	}
 

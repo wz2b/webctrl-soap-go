@@ -44,6 +44,10 @@ type TrendPoint struct {
 	Value       float64
 }
 
+func (this *TrendPoint) IsValid() bool {
+	return this.ValueString != ""
+}
+
 func (this *TrendService) getTrendDataChunk(gql string, startTime time.Time, endTime time.Time, fromStart bool, maxRecords int) ([]TrendPoint, error) {
 	request := alcEnvelope{
 		XMLNsSoap: "http://schemas.xmlsoap.org/soap/envelope/",
@@ -59,12 +63,12 @@ func (this *TrendService) getTrendDataChunk(gql string, startTime time.Time, end
 		},
 	}
 
-	payload, err := xml.Marshal(request)
+	requestPayload, err := xml.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := call(this.Endpoint, this.User, this.password, xmlheader+string(payload))
+	response, err := call(this.Endpoint, this.User, this.password, xmlheader+string(requestPayload))
 
 	if err != nil {
 		//log.Println("Failure getting response ", err)

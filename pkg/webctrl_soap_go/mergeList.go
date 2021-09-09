@@ -10,8 +10,8 @@ type SortedTrendList struct {
 	mu   sync.Mutex
 }
 type listItem struct {
-	dataChannel <-chan *TrendEvent
-	event       *TrendEvent
+	dataChannel <-chan TrendEvent
+	event       TrendEvent
 	next        *listItem
 }
 
@@ -20,15 +20,11 @@ func NewSortedTrendList() *SortedTrendList {
 }
 
 // insert() inserts an item into a singly linked list based on the timestamp.
-func (list *SortedTrendList) insert(newEntry *TrendEvent, source <-chan *TrendEvent) *SortedTrendList {
+func (list *SortedTrendList) insert(newEntry TrendEvent, source <-chan TrendEvent) *SortedTrendList {
 	list.mu.Lock()
 	defer list.mu.Unlock()
 
-	newNode := &listItem{event: &TrendEvent{
-		Source: newEntry.Source,
-		Data:   newEntry.Data,
-		Err:    newEntry.Err,
-	}, dataChannel: source, next: nil}
+	newNode := &listItem{event: newEntry, dataChannel: source, next: nil}
 
 	//fmt.Printf(">>> insert %s %s\n", newNode.event.Data.Time, newNode.event.Source.Location)
 	if list.head == nil {

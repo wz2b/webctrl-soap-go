@@ -29,7 +29,6 @@ type ServerConfig struct {
 }
 
 type TrendLocationConfig struct {
-	Location      string
-	Name          string
-	Interpolation string
+	Location string
+	Name     string
 }

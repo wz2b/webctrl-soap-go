@@ -1,15 +1,9 @@
 package webctrl_soap_go
 
-import (
-	"errors"
-	"fmt"
-	"os"
-)
-
-func MergeTrends(channels []<-chan *TrendEvent) <-chan *TrendEvent {
+func MergeTrends(channels []<-chan TrendEvent) <-chan TrendEvent {
 	var list = NewSortedTrendList()
 
-	var output = make(chan *TrendEvent)
+	var output = make(chan TrendEvent)
 
 	go func() {
 		// Get the first event from each channel
@@ -17,11 +11,8 @@ func MergeTrends(channels []<-chan *TrendEvent) <-chan *TrendEvent {
 			// Don't have to check for 'more' here as we are only getting a single point
 			event := <-channel
 
-			if event == nil {
-				output <- &TrendEvent{
-					Source: event.Source, Data: nil, Err: errors.New("trend source is empty")}
-			} else if event.Err != nil {
-				output <- &TrendEvent{Source: event.Source, Data: nil, Err: event.Err}
+			if event.Err != nil {
+				output <- TrendEvent{Source: event.Source, Err: event.Err}
 			} else {
 				list.insert(event, channel)
 			}
@@ -42,14 +33,11 @@ func MergeTrends(channels []<-chan *TrendEvent) <-chan *TrendEvent {
 			// If the result of the last fetch was nil that means there is no more.
 			// Otherwise, take this new sample and insert it into the list (merge sorted
 			// to the correct place)
-			if nextEvent != nil {
-				if nextEvent.Err != nil {
-					fmt.Fprintf(os.Stderr, "Ending stream %s on error", event.Source.Location)
-					output <- &TrendEvent{Source: nextEvent.Source, Data: nil, Err: nextEvent.Err}
-				} else {
-					//fmt.Printf("Inserting %s %s\n", nextEvent.Data.Time, nextEvent.Source.Location)
-					list.insert(nextEvent, item.dataChannel)
-				}
+			if nextEvent.Err != nil {
+				output <- TrendEvent{Source: nextEvent.Source, Err: nextEvent.Err}
+			} else if nextEvent.Data.ValueString != "" {
+				//fmt.Printf("Inserting %s %s\n", nextEvent.Data.Time, nextEvent.Source.Location)
+				list.insert(nextEvent, item.dataChannel)
 			}
 		}
 		close(output)

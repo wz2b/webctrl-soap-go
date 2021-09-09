@@ -22,14 +22,17 @@ func main() {
 	//
 	// Make a flattened list of servers
 	//
-	var sources []*alcsoap.TrendSource
+	var sources []alcsoap.TrendSource
 
 	//
 	// Set up the server streams (one per server) while at the same time
 	// constructing a flat list of trend locations
 	//
-	serverStreams := make([]<-chan *alcsoap.TrendEvent, len(config.ConfigFile.Servers))
-	fmt.Printf("There are %d servers\n", len(config.ConfigFile.Servers))
+	serverStreams := make([]<-chan alcsoap.TrendEvent, len(config.ConfigFile.Servers))
+	//fmt.Printf("There are %d servers\n", len(config.ConfigFile.Servers))
+
+	var columnHeadings = make([]string, 0)
+
 	for i, server := range config.ConfigFile.Servers {
 		service := alcsoap.NewSoapService(server.Url, server.Login, server.Password)
 
@@ -41,7 +44,12 @@ func main() {
 		serverStreams[i] = service.Trend.GetMultipleTrends(config.start, config.stop, locations)
 
 		for _, location := range server.Locations {
-			sources = append(sources, &alcsoap.TrendSource{&service.Trend, location.Location})
+			sources = append(sources, service.Trend.MakeTrendSource(location.Location, location.Name))
+			if len(location.Name) > 0 {
+				columnHeadings = append(columnHeadings, location.Name)
+			} else {
+				columnHeadings = append(columnHeadings, location.Location)
+			}
 		}
 	}
 
@@ -49,42 +57,39 @@ func main() {
 	// Output the headers
 	//
 	fmt.Print("\"time")
-	for _, source := range sources {
-		fmt.Print("\", \"")
-		if len(source.Location) > 0 {
-			fmt.Print(source.Location)
-		} else {
-			fmt.Print(source.Location)
-		}
+	for _, heading := range columnHeadings {
+		fmt.Printf("\"\t \"%s", heading)
 	}
 	fmt.Println("\"")
 
 	//
+	// TODO: when implementing the interpolation module, build in a way to always find the first point
+
+	// TODO: hide password from TrendSource when outputting.  Upsetting how it shows up.
+
+	//
 	// Run the trends
 	//
-
 	merged := alcsoap.MergeTrends(serverStreams)
 	grouped := alcsoap.GroupByTime(merged)
+	repeated := alcsoap.GroupRepeatLast(grouped)
 
-	for group := range grouped {
-		if group != nil && group.Trends != nil && len(group.Trends) > 0 {
+	for group := range repeated {
+		sorted := alcsoap.SortGroup(group, sources)
+		fmt.Printf("\"%s\"\t", group.Time.Format("2006-01-02 15:04:05"))
 
-			sorted := alcsoap.SortGroup(group.Trends, sources)
-			fmt.Printf("\"%s\"\t", group.Time.Format("2006-01-02 15:04:05"))
-
-			for _, event := range sorted {
-				if event != nil && event.Data != nil {
-					fmt.Printf("\t%f", event.Data.Value)
-				} else {
-					fmt.Printf("\t-")
-				}
-
+		for _, event := range sorted.Trends {
+			if event.Err != nil {
+				fmt.Printf("\tErr")
+			} else if event.Data.IsValid() == false {
+				fmt.Printf("\t-")
+			} else {
+				fmt.Printf("\t%f", event.Data.Value)
 			}
 
-			fmt.Println()
-
-		} else {
-			fmt.Printf("# empty group\n")
 		}
+
+		fmt.Println()
+
 	}
 }

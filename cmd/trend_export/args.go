@@ -87,7 +87,7 @@ func processArgs() (config CommandLineOpts, err error) {
 		flagServer := ServerConfig{Url: *cmdLineServer, Login: config.user, Password: config.password}
 		flagLocations := make([]TrendLocationConfig, len(cmdLineLocations))
 		for i, loc := range cmdLineLocations {
-			flagLocations[i] = TrendLocationConfig{Location: loc, Interpolation: "none"}
+			flagLocations[i] = TrendLocationConfig{Location: loc}
 		}
 		flagServer.Locations = flagLocations
 		config.ConfigFile.Servers = append(config.ConfigFile.Servers, flagServer)
