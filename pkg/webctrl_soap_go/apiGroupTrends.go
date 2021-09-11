@@ -22,12 +22,23 @@ func (this *OrderedTrendGroupEvent) IsEmpty() bool {
 	return len(this.Trends) == 0
 }
 
-func GroupByTime(events <-chan TrendEvent) <-chan TrendGroupEvent {
+type TrendGrouper struct {
+	preload map[TrendSource]TrendEvent
+}
+
+func CreateTrendGrouper() *TrendGrouper {
+	return &TrendGrouper{
+		preload: make(map[TrendSource]TrendEvent),
+	}
+}
+
+func (this *TrendGrouper) GroupByTime(events <-chan TrendEvent) <-chan TrendGroupEvent {
 	var output = make(chan TrendGroupEvent)
+
+	currentGroup := make(map[TrendSource]TrendEvent)
 
 	go func() {
 		var groupTime time.Time
-		currentGroup := make(map[TrendSource]TrendEvent)
 
 		for event := range events {
 			if event.Err != nil {

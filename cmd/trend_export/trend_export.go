@@ -10,6 +10,8 @@ const LAYOUT = "2006-01-02T15:04:05"
 
 func main() {
 	config, err := processArgs()
+	grouper := alcsoap.CreateTrendGrouper()
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,13 +46,18 @@ func main() {
 		serverStreams[i] = service.Trend.GetMultipleTrends(config.start, config.stop, locations)
 
 		for _, location := range server.Locations {
-			sources = append(sources, service.Trend.MakeTrendSource(location.Location, location.Name))
+			sourceLocation := service.Trend.MakeTrendSource(server.Url, location.Location)
+			sources = append(sources, sourceLocation)
 			if len(location.Name) > 0 {
 				columnHeadings = append(columnHeadings, location.Name)
 			} else {
 				columnHeadings = append(columnHeadings, location.Location)
 			}
+
+			grouper.Preload(service.Trend, config.start, sourceLocation)
+
 		}
+
 	}
 
 	//
@@ -70,9 +77,12 @@ func main() {
 	//
 	// Run the trends
 	//
-	merged := alcsoap.MergeTrends(serverStreams)
-	grouped := alcsoap.GroupByTime(merged)
-	repeated := alcsoap.GroupRepeatLast(grouped)
+	merger := alcsoap.CreateTrendMerger()
+
+	merged := merger.Merge(serverStreams)
+
+	grouped := grouper.GroupByTime(merged)
+	repeated := grouper.GroupRepeatLast(grouped)
 
 	for group := range repeated {
 		sorted := alcsoap.SortGroup(group, sources)

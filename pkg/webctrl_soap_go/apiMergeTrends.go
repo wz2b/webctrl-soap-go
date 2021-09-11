@@ -1,7 +1,15 @@
 package webctrl_soap_go
 
-func MergeTrends(channels []<-chan TrendEvent) <-chan TrendEvent {
-	var list = NewSortedTrendList()
+type TrendMerger struct {
+	list *SortedTrendList
+}
+
+func CreateTrendMerger() *TrendMerger {
+	return &TrendMerger{}
+}
+
+func (this *TrendMerger) Merge(channels []<-chan TrendEvent) <-chan TrendEvent {
+	var list *SortedTrendList = NewSortedTrendList()
 
 	var output = make(chan TrendEvent)
 

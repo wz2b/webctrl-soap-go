@@ -7,9 +7,8 @@ import (
 )
 
 type TrendSource struct {
-	//Source   *TrendService
+	Server   string
 	Location string
-	Alias    string
 }
 
 type TrendEvent struct {
@@ -28,7 +27,7 @@ func (this *TrendService) GetTrendData(gql string, startTime time.Time, endTime 
 	chunkSize := this.chunkSize // take a snapshot of chunk size in case somebody changes it while we're paging
 	sFrom := startTime
 
-	source := TrendSource{Location: gql}
+	source := TrendSource{Server: this.parent.Name, Location: gql}
 
 	events := make(chan TrendEvent)
 
@@ -41,7 +40,7 @@ func (this *TrendService) GetTrendData(gql string, startTime time.Time, endTime 
 
 			if err != nil {
 				// Signal user with error
-				fmt.Fprintln(os.Stderr, "ERROR", err)
+				fmt.Fprintf(os.Stderr, "# ERROR: %s", err)
 				events <- TrendEvent{Err: err, Source: source}
 			}
 
@@ -74,6 +73,6 @@ func (this *TrendService) GetTrendData(gql string, startTime time.Time, endTime 
 	return events
 }
 
-func (this *TrendService) MakeTrendSource(location string, alias string) TrendSource {
-	return TrendSource{location, alias}
+func (this *TrendService) MakeTrendSource(server string, location string) TrendSource {
+	return TrendSource{Server: server, Location: location}
 }
