@@ -81,25 +81,32 @@ func main() {
 
 	merged := merger.Merge(serverStreams)
 
-	grouped := grouper.GroupByTime(merged)
-	repeated := grouper.GroupRepeatLast(grouped)
+	if true {
+		for p := range merged {
+			fmt.Printf("%s\n", p.Data.Time.Local())
+		}
+	} else {
 
-	for group := range repeated {
-		sorted := alcsoap.SortGroup(group, sources)
-		fmt.Printf("\"%s\"\t", group.Time.Format("2006-01-02 15:04:05"))
+		grouped := grouper.GroupByTime(merged)
+		repeated := grouper.GroupRepeatLast(grouped)
 
-		for _, event := range sorted.Trends {
-			if event.Err != nil {
-				fmt.Printf("\tErr")
-			} else if event.Data.IsValid() == false {
-				fmt.Printf("\t-")
-			} else {
-				fmt.Printf("\t%f", event.Data.Value)
+		for group := range repeated {
+			sorted := alcsoap.SortGroup(group, sources)
+			fmt.Printf("\"%s\"\t", group.Time.Format("2006-01-02 15:04:05"))
+
+			for _, event := range sorted.Trends {
+				if event.Err != nil {
+					fmt.Printf("\tErr")
+				} else if event.Data.IsValid() == false {
+					fmt.Printf("\t-")
+				} else {
+					fmt.Printf("\t%f", event.Data.Value)
+				}
+
 			}
 
+			fmt.Println()
+
 		}
-
-		fmt.Println()
-
 	}
 }

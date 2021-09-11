@@ -1,8 +1,6 @@
 package webctrl_soap_go
 
 import (
-	"fmt"
-	"os"
 	"time"
 )
 
@@ -39,15 +37,12 @@ func (this *TrendService) GetTrendData(gql string, startTime time.Time, endTime 
 			pointsRead = len(trnData)
 
 			if err != nil {
-				// Signal user with error
-				fmt.Fprintf(os.Stderr, "# ERROR: %s", err)
 				events <- TrendEvent{Err: err, Source: source}
 			}
 
 			if len(trnData) > 0 {
 				// Signal user with data
 				for _, point := range trnData {
-					//fmt.Printf("Low level get trend data emitting %s %s %s\n", gql, point.Time, point.ValueString)
 					events <- TrendEvent{Data: TrendPoint{
 						Time:        point.Time,
 						TimeString:  point.TimeString,

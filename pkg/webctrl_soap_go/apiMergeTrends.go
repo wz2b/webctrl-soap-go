@@ -18,7 +18,6 @@ func (this *TrendMerger) Merge(channels []<-chan TrendEvent) <-chan TrendEvent {
 		for _, channel := range channels {
 			// Don't have to check for 'more' here as we are only getting a single point
 			event := <-channel
-
 			if event.Err != nil {
 				output <- TrendEvent{Source: event.Source, Err: event.Err}
 			} else {
