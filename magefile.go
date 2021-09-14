@@ -1,4 +1,5 @@
-//+build mage
+//go:build mage
+// +build mage
 
 package main
 
@@ -7,9 +8,6 @@ import (
 	"github.com/magefile/mage/sh"
 	"strings"
 )
-
-
-
 
 // Runs go mod download and then installs the binary.
 func Build() error {
@@ -37,9 +35,8 @@ func Build() error {
 		return err
 	}
 
-
-	for _, command_package := range(cmds) {
-		for _, arch := range (arches) {
+	for _, command_package := range cmds {
+		for _, arch := range arches {
 			p := strings.Split(arch, "/")
 			err = build(command_package, p[0], p[1])
 			if err != nil {
@@ -50,13 +47,12 @@ func Build() error {
 	return nil
 }
 
-
 func build(pkg string, os string, arch string) error {
 	source := fmt.Sprintf("./cmd/%s", pkg)
-	dest := fmt.Sprintf("%s-%s-%s", pkg, os, arch )
+	dest := fmt.Sprintf("%s-%s-%s", pkg, os, arch)
 	if os == "windows" {
 		dest = dest + ".exe"
 	}
 
-	return sh.RunWith( map[string]string{ "GOOS": os, "GOARCH": arch}, "go", "build", "-v", "-o", dest, source)
+	return sh.RunWith(map[string]string{"GOOS": os, "GOARCH": arch}, "go", "build", "-v", "-o", dest, source)
 }
