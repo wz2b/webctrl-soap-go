@@ -81,7 +81,7 @@ func main() {
 
 	merged := merger.Merge(serverStreams)
 
-	if true {
+	if false {
 		for p := range merged {
 			fmt.Printf("%s\n", p.Data.Time.Local())
 		}
@@ -102,11 +102,9 @@ func main() {
 				} else {
 					fmt.Printf("\t%f", event.Data.Value)
 				}
-
 			}
 
 			fmt.Println()
-
 		}
 	}
 }

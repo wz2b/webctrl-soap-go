@@ -5,10 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -101,7 +99,13 @@ func call(endpoint string, username string, password string, payload string) ([]
 
 	if response.StatusCode != 200 {
 		bodyBytes, _ := ioutil.ReadAll(response.Body)
-		fmt.Fprintf(os.Stderr, string(bodyBytes))
+
+		faultObj := new(AlcFaultEnvelope)
+		err = xml.Unmarshal(bodyBytes, faultObj)
+		if err == nil {
+			fault := faultObj.Body.Fault
+			return nil, fault
+		}
 		return nil, errors.New(response.Status)
 	}
 
