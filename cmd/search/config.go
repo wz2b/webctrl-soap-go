@@ -2,6 +2,7 @@ package main
 
 // CommandLineOpts holds command line arguments
 type CommandLineOpts struct {
+	server          string
 	user            string
 	password        string
 	credentialsFile string
