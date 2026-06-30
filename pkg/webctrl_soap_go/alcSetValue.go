@@ -38,7 +38,7 @@ func (this *EvalService) SetValue(gql string, newValue string, changeReason stri
 		return err
 	}
 
-	_, err = call(this.Endpoint, this.User, this.password, xmlheader+string(payload))
+	_, err = call(this.parent.httpClient, this.Endpoint, this.User, this.password, xmlheader+string(payload))
 	if err != nil {
 		return err
 	}

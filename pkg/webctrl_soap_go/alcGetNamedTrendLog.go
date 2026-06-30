@@ -35,7 +35,7 @@ func (this *EvalService) GetNamedTrendLog(equipment string, trend string) (*GqlN
 		return nil, err
 	}
 
-	response, err := call(this.Endpoint, this.User, this.password, xmlheader+string(payload))
+	response, err := call(this.parent.httpClient, this.Endpoint, this.User, this.password, xmlheader+string(payload))
 	respObj := new(alcGetNamedTrendLogResponseEnvelope)
 	err = xml.Unmarshal(response, respObj)
 	return &respObj.Body.Node, err

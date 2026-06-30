@@ -68,7 +68,7 @@ func (this *TrendService) getTrendDataChunk(gql string, startTime time.Time, end
 		return nil, err
 	}
 
-	response, err := call(this.Endpoint, this.User, this.password, xmlheader+string(requestPayload))
+	response, err := call(this.parent.httpClient, this.Endpoint, this.User, this.password, xmlheader+string(requestPayload))
 
 	if err != nil {
 		//log.Println("Failure getting response ", err)

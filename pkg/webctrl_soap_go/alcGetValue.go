@@ -35,7 +35,7 @@ func (this *EvalService) GetValue(gql string) (string, error) {
 		return "", err
 	}
 
-	response, err := call(this.Endpoint, this.User, this.password, xmlheader+string(payload))
+	response, err := call(this.parent.httpClient, this.Endpoint, this.User, this.password, xmlheader+string(payload))
 	if err != nil {
 		return "", err
 	}

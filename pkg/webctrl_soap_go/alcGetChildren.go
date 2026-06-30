@@ -45,7 +45,7 @@ func (this *EvalService) GetChildren(gql string, filter func(GqlNode) bool) ([]G
 		return nil, err
 	}
 
-	response, err := call(this.Endpoint, this.User, this.password, xmlheader+string(payload))
+	response, err := call(this.parent.httpClient, this.Endpoint, this.User, this.password, xmlheader+string(payload))
 
 	if err != nil {
 		log.Fatal("Failure", err)
