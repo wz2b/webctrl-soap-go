@@ -12,20 +12,17 @@ func main() {
 	config, err := processArgs()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid command line arguments: %s\n", err)
-		os.Exit(1)
 	}
 
 	alc := alcsoap.NewSoapService(config.server, config.user, config.password)
 
 	out := make(chan alcsoap.GqlNode)
 
-	fmt.Printf("Starting search at %s\n", config.start)
 	go getChildren(alc.Eval, config.start, func(node alcsoap.GqlNode) bool {
-		return true
+		return true || node.Type == "AREA" || node.Type == "EQUIPMENT"
 	}, out)
 
 	types := make(map[string]int)
-	i := 0
 
 	for child := range out {
 		fmt.Printf("%s %s \"%s\"\n", child.Type, child.ReferenceName, child.DisplayName)
@@ -35,19 +32,6 @@ func main() {
 		} else {
 			types[child.Type] = 1
 		}
-
-		if i < 50 {
-			i = i + 1
-		} else {
-			i = 0
-
-			fmt.Println("\nTypes so far\n============")
-			for k, v := range types {
-				fmt.Printf("%s\t%d\n", k, v)
-			}
-
-		}
-
 	}
 
 	fmt.Println("\nFinal count of types")

@@ -31,6 +31,27 @@ var client = http.Client{
 	Timeout: 30 * time.Second,
 }
 
+//func init() {
+//	configureTLSClient()
+//}
+//
+//func configureTLSClient() {
+//	rootCAs, err := x509.SystemCertPool()
+//	if rootCAs == nil || err != nil {
+//		rootCAs = x509.NewCertPool()
+//	}
+//
+//	// You can add extra CAs here later if needed
+//	// data, _ := os.ReadFile("/etc/ssl/certs/extra-ca.crt")
+//	// rootCAs.AppendCertsFromPEM(data)
+//
+//	client.Transport = &http.Transport{
+//		TLSClientConfig: &tls.Config{
+//			RootCAs: rootCAs,
+//		},
+//	}
+//}
+
 func basicAuth(username, password string) string {
 	auth := username + ":" + password
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))

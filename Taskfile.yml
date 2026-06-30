@@ -1,0 +1,21 @@
+version: "3"
+
+tasks:
+  default:
+    cmds:
+      - task: build
+
+  build:
+    desc: Build all command binaries
+    cmds:
+      - go run ./internal/tasktool build
+
+  publish:
+    desc: Publish build artifacts to S3
+    cmds:
+      - go run ./internal/tasktool publish
+
+  md-test:
+    desc: Render trend_export documentation as HTML
+    cmds:
+      - go run ./internal/tasktool md-test

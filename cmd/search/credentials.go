@@ -10,15 +10,17 @@ func loadCredentialsFromFile(path string) (username string, password string, err
 	data, err := ioutil.ReadFile(path)
 
 	if err != nil {
-		str := string(data)
-		str = strings.TrimSpace(str)
-		fields := strings.Split(str, ":")
-		if len(fields) != 2 {
-			err = errors.New("credentials file is invalid  Must be one line of username:password")
-		} else {
-			username = fields[0]
-			password = fields[1]
-		}
+		return "", "", err
 	}
-	return
+
+	str := string(data)
+	str = strings.TrimSpace(str)
+	fields := strings.Split(str, ":")
+	if len(fields) != 2 {
+		return "", "", errors.New("credentials file is invalid - Must be one line of username:password")
+	}
+
+	username = fields[0]
+	password = fields[1]
+	return username, password, nil
 }

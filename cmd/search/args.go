@@ -1,21 +1,32 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"os"
 )
 
 func processArgs() (config CommandLineOpts, err error) {
-	flag.StringVar(&config.credentialsFile, "creds", "", "WebCTRL credentials file - file must be one line containing user:password")
-	flag.StringVar(&config.user, "user", "", "WebCTRL username (must have SOAP privileges)")
-	flag.StringVar(&config.password, "password", "", "WebCTRL password")
-	flag.StringVar(&config.start, "start", "", "GQL string of start location")
-	flag.StringVar(&config.pattern, "search", "", "Start time (inclusive)")
-	flag.BoolVar(&config.verbose, "v", false, "Display extra information")
-	flag.StringVar(&config.server, "server", "", "URL to WebCTRL server")
+	fs := flag.NewFlagSet("search", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	fs.StringVar(&config.credentialsFile, "creds", "", "WebCTRL credentials file - file must be one line containing user:password")
+	fs.StringVar(&config.user, "user", "", "WebCTRL username (must have SOAP privileges)")
+	fs.StringVar(&config.password, "password", "", "WebCTRL password")
+	fs.StringVar(&config.start, "start", "", "GQL string of start location")
+	fs.StringVar(&config.pattern, "search", "", "Start time (inclusive)")
+	fs.BoolVar(&config.verbose, "v", false, "Display extra information")
+	fs.StringVar(&config.server, "server", "", "URL to WebCTRL server")
 
-	if !flag.Parsed() {
-		flag.Parse()
+	if err = fs.Parse(os.Args[1:]); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return config, err
+		}
+		if err.Error() == "flag needs an argument: -start" {
+			return config, fmt.Errorf("%w; if the start GQL begins with #, pass it as -start='#...' or -start=#...", err)
+		}
+		return config, err
 	}
 
 	if config.server == "" {
@@ -40,7 +51,7 @@ func processArgs() (config CommandLineOpts, err error) {
 	}
 
 	// fetch the rest of the command line
-	cmdLineLocations := flag.Args()
+	cmdLineLocations := fs.Args()
 
 	// Validation
 	if config.user == "" {
@@ -53,11 +64,18 @@ func processArgs() (config CommandLineOpts, err error) {
 
 	switch len(cmdLineLocations) {
 	case 0:
-		config.start = "/trees/geographic"
+		if config.start == "" {
+			config.start = "/trees/geographic"
+		}
 	case 1:
-		config.start = cmdLineLocations[0]
-
+		if config.start == "" {
+			config.start = cmdLineLocations[0]
+		}
 	default:
+		return config, fmt.Errorf("must specify a starting location")
+	}
+
+	if config.start == "" {
 		return config, fmt.Errorf("must specify a starting location")
 	}
 
