@@ -7,8 +7,8 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -134,15 +134,18 @@ func NewSoapServiceWithHTTPClient(host string, user string, password string, htt
 	return service
 }
 
-func NewHTTPClientWithExtraCAPEM(extraCAPEM []byte) (*http.Client, error) {
+func NewHTTPClientWithExtraCAPEM(extraCAs ...[]byte) (*http.Client, error) {
 	rootCAs, err := x509.SystemCertPool()
 	if rootCAs == nil || err != nil {
 		rootCAs = x509.NewCertPool()
 	}
 
-	if len(extraCAPEM) > 0 {
-		if ok := rootCAs.AppendCertsFromPEM(extraCAPEM); !ok {
-			return nil, errors.New("failed to append extra CA certificate")
+	for i, pem := range extraCAs {
+		if len(pem) == 0 {
+			continue
+		}
+		if ok := rootCAs.AppendCertsFromPEM(pem); !ok {
+			return nil, fmt.Errorf("failed to append extra CA certificate at index %d", i)
 		}
 	}
 
@@ -156,50 +159,50 @@ func NewHTTPClientWithExtraCAPEM(extraCAPEM []byte) (*http.Client, error) {
 	}, nil
 }
 
-func old_call(endpoint string, username string, password string, payload string) ([]byte, error) {
-	var err error
-	request, err := http.NewRequest(http.MethodPost,
-		endpoint,
-		bytes.NewBufferString(payload))
-	if err != nil {
-		return nil, err
-	}
-
-	request.Header.Set("Accept", "text/xml, multipart/related")
-	request.Header.Set("Content-Type", "text/xml; charset=utf-8")
-	request.Header.Set("SOAPAction", "grafana-alcsoap")
-	request.Header.Set("Authorization", basicAuth(username, password))
-
-	response, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		bodyBytes, _ := ioutil.ReadAll(response.Body)
-
-		faultObj := new(AlcFaultEnvelope)
-		err = xml.Unmarshal(bodyBytes, faultObj)
-		if err == nil {
-			fault := faultObj.Body.Fault
-			return nil, fault
-		}
-		return nil, errors.New(response.Status)
-	}
-
-	if err != nil {
-		return nil, err
-	} else {
-		bodyBytes, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		return bodyBytes, nil
-	}
-}
+// func old_call(endpoint string, username string, password string, payload string) ([]byte, error) {
+// 	var err error
+// 	request, err := http.NewRequest(http.MethodPost,
+// 		endpoint,
+// 		bytes.NewBufferString(payload))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	request.Header.Set("Accept", "text/xml, multipart/related")
+// 	request.Header.Set("Content-Type", "text/xml; charset=utf-8")
+// 	request.Header.Set("SOAPAction", "grafana-alcsoap")
+// 	request.Header.Set("Authorization", basicAuth(username, password))
+//
+// 	response, err := client.Do(request)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	defer response.Body.Close()
+//
+// 	if response.StatusCode != 200 {
+// 		bodyBytes, _ := ioutil.ReadAll(response.Body)
+//
+// 		faultObj := new(AlcFaultEnvelope)
+// 		err = xml.Unmarshal(bodyBytes, faultObj)
+// 		if err == nil {
+// 			fault := faultObj.Body.Fault
+// 			return nil, fault
+// 		}
+// 		return nil, errors.New(response.Status)
+// 	}
+//
+// 	if err != nil {
+// 		return nil, err
+// 	} else {
+// 		bodyBytes, err := ioutil.ReadAll(response.Body)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+//
+// 		return bodyBytes, nil
+// 	}
+// }
 
 func call(httpClient *http.Client, endpoint string, username string, password string, payload string) ([]byte, error) {
 	if httpClient == nil {

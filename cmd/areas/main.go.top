@@ -1,0 +1,64 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
+)
+
+func main() {
+	config, err := processArgs()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid command line arguments: %s\n", err)
+		os.Exit(1)
+	}
+
+	alc := alcsoap.NewSoapService(
+		config.server,
+		config.user,
+		config.password,
+	)
+
+	fmt.Fprintf(os.Stderr, "GET %s\n", config.start)
+
+	children, err := alc.Eval.GetChildren(
+		config.start,
+		func(node alcsoap.GqlNode) bool {
+			return true
+		},
+	)
+
+	if err != nil {
+		fmt.Fprintf(
+			os.Stderr,
+			"unable to get children of %s: %s\n",
+			config.start,
+			err,
+		)
+		os.Exit(1)
+	}
+
+	fmt.Fprintf(os.Stderr, "    %d children\n", len(children))
+
+	types := make(map[string]int)
+
+	for _, node := range children {
+		node.ReferenceName = config.start + "/" + node.ReferenceName
+
+		fmt.Printf(
+			"%s %s %q\n",
+			node.Type,
+			node.ReferenceName,
+			node.DisplayName,
+		)
+
+		types[node.Type]++
+	}
+
+	fmt.Println("\nFinal count of types")
+
+	for k, v := range types {
+		fmt.Printf("%s\t%d\n", k, v)
+	}
+}

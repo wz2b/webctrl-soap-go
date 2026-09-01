@@ -4,71 +4,108 @@ import (
 	"fmt"
 	"os"
 	"time"
+
 	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
 )
 
 func main() {
-
 	config, err := processArgs()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid command line arguments: %s\n", err)
+		os.Exit(1)
 	}
 
-	alc := alcsoap.NewSoapService(config.server, config.user, config.password)
+	alc := alcsoap.NewSoapService(
+		config.server,
+		config.user,
+		config.password,
+	)
 
 	out := make(chan alcsoap.GqlNode)
 
-	go getChildren(alc.Eval, config.start, func(node alcsoap.GqlNode) bool {
-		return true || node.Type == "AREA" || node.Type == "EQUIPMENT"
-	}, out)
+	go getChildren(
+		alc.Eval,
+		config.start,
+		func(node alcsoap.GqlNode) bool {
+			// Discovery mode: accept every node type.
+			return true
+		},
+		out,
+	)
 
 	types := make(map[string]int)
 
 	for child := range out {
-		fmt.Printf("%s %s \"%s\"\n", child.Type, child.ReferenceName, child.DisplayName)
-		t, ok := types[child.Type]
-		if ok {
-			types[child.Type] = t + 1
-		} else {
-			types[child.Type] = 1
-		}
+		fmt.Printf(
+			"%s %s %q\n",
+			child.Type,
+			child.ReferenceName,
+			child.DisplayName,
+		)
+
+		types[child.Type]++
 	}
 
 	fmt.Println("\nFinal count of types")
+
 	for k, v := range types {
 		fmt.Printf("%s\t%d\n", k, v)
 	}
-
 }
 
-func getChildren(eval alcsoap.EvalService, gql string, filter func(alcsoap.GqlNode) bool, out chan<- alcsoap.GqlNode) {
+func getChildren(
+	eval alcsoap.EvalService,
+	gql string,
+	filter func(alcsoap.GqlNode) bool,
+	out chan<- alcsoap.GqlNode,
+) {
+	defer close(out)
+
 	recurse(eval, gql, filter, out)
-	close(out)
 }
 
-func recurse(eval alcsoap.EvalService, gql string, filter func(alcsoap.GqlNode) bool, out chan<- alcsoap.GqlNode) {
-
+func recurse(
+	eval alcsoap.EvalService,
+	gql string,
+	filter func(alcsoap.GqlNode) bool,
+	out chan<- alcsoap.GqlNode,
+) {
 	time.Sleep(1 * time.Second)
 
-	children, err := eval.GetChildren(gql, filter)
+	fmt.Fprintf(os.Stderr, "GET %s\n", gql)
 
+	children, err := eval.GetChildren(gql, filter)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to get children of %s: %s", gql, err)
-		close(out)
+		fmt.Fprintf(
+			os.Stderr,
+			"unable to get children of %s: %s\n",
+			gql,
+			err,
+		)
+		return
 	}
+
+	fmt.Fprintf(
+		os.Stderr,
+		"    %d children\n",
+		len(children),
+	)
 
 	for _, node := range children {
 		node.ReferenceName = gql + "/" + node.ReferenceName
+
+		// Emit every node regardless of type.
 		out <- node
-		switch node.Type {
-		case "AREA",
-			"EQUIPMENT", "BEQU",
-			"BAI", "BAO", "BAV",
-			"BBI", "BBO", "BBV",
-			"LPOINT", // ANI2, BNI2, etc.
-			"BMAI", "BMBO", "BMBV",
-			"BMSI", "BMSO", "BMSV":
-			recurse(eval, node.ReferenceName, filter, out)
-		}
+
+		// Discovery mode: attempt to recurse into every node.
+		//
+		// Leaf nodes should simply return zero children. This lets us
+		// discover container types that we don't know about yet.
+		recurse(
+			eval,
+			node.ReferenceName,
+			filter,
+			out,
+		)
 	}
 }
