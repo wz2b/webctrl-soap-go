@@ -39,7 +39,7 @@ func handler(ctx context.Context, req LambdaRequest) (LambdaResponse, error) {
 		return LambdaResponse{}, err
 	}
 
-	httpClient, err := alcsoap.NewHTTPClientWithExtraCAPEM(root1, root2, root3)
+	httpClient, err := alcsoap.NewHTTPClientWithExtraCAPEM(root1, root2, root3, im1)
 	if err != nil {
 		return LambdaResponse{}, fmt.Errorf("create WebCTRL HTTP client: %w", err)
 	}

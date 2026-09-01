@@ -4,9 +4,6 @@ import (
 	_ "embed"
 )
 
-//go:embed InCommonRSAOVSSLCA3.pem
-var inCommonRSAOVSSLCA3 []byte
-
 //go:embed certs/emSignRootTLSCA-G1-corrected-7-8-26.crt
 var root1 []byte
 
@@ -15,6 +12,9 @@ var root2 []byte
 
 //go:embed certs/emSignRootTLSCA-G3.crt
 var root3 []byte
+
+//go:embed certs/InCommonIntermediateCA-OVG2C.crt
+var im1 []byte
 
 // func installExtraCA() error {
 //
