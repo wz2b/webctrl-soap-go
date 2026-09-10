@@ -1,4 +1,4 @@
-package webctrl_soap_go
+package alcsoap
 
 func SortGroup(inputGroup TrendGroupEvent, order []TrendSource) OrderedTrendGroupEvent {
 

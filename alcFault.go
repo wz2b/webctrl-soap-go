@@ -1,4 +1,4 @@
-package webctrl_soap_go
+package alcsoap
 
 import "encoding/xml"
 
