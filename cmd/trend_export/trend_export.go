@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
+	alcsoap "github.com/wz2b/webctrl-soap-go"
 )
 
 const LAYOUT = "2006-01-02T15:04:05"

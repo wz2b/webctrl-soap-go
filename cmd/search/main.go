@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"time"
-	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
+	alcsoap "github.com/wz2b/webctrl-soap-go"
 )
 
 func main() {

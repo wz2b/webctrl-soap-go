@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
+	alcsoap "github.com/wz2b/webctrl-soap-go"
 )
 
 func main() {

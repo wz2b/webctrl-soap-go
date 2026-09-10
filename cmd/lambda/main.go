@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	alcsoap "webctrl-soap-go/pkg/webctrl_soap_go"
+	alcsoap "github.com/wz2b/webctrl-soap-go"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
