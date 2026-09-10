@@ -1,4 +1,4 @@
-module webctrl-soap-go
+module github.com/wz2b/webctrl-soap-go
 
 go 1.24
 
