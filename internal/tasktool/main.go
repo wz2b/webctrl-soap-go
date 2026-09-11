@@ -35,7 +35,7 @@ func main() {
 }
 
 func build() error {
-	cmds := []string{"trend_export", "areas", "alcsoap_write_value", "search"}
+	cmds := []string{"trend_export", "trend_export_f1j", "areas", "alcsoap_write_value", "search"}
 	arches := []string{
 		"linux/386",
 		"linux/amd64",
@@ -106,7 +106,7 @@ type publisher struct {
 
 func newPublisher() *publisher {
 	sessionConfig := &aws.Config{
-		Region:                       aws.String("us-east-1"),
+		Region:                        aws.String("us-east-1"),
 		CredentialsChainVerboseErrors: aws.Bool(true),
 	}
 

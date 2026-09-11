@@ -1,6 +1,7 @@
 package alcsoap
 
 import (
+	"strconv"
 	"time"
 )
 
@@ -80,4 +81,41 @@ func (this *TrendGrouper) GroupByTime(events <-chan TrendEvent) <-chan TrendGrou
 	}()
 
 	return output
+}
+
+func (g *TrendGrouper) PreloadF1J(
+	svc F1JTrendService,
+	start time.Time,
+	location TrendSource,
+) {
+	beginningOfTime := time.Unix(0, 0)
+
+	records, err := svc.GetF1JTrendData(
+		location.Location,
+		beginningOfTime,
+		start,
+		false,
+		1,
+	)
+
+	if err != nil || len(records) == 0 {
+		return
+	}
+
+	record := records[0]
+
+	value, err := strconv.ParseFloat(record.RawValue, 64)
+	if err != nil {
+		return
+	}
+
+	g.preload[location] = TrendEvent{
+		Source: location,
+		Data: TrendPoint{
+			Time:        record.Timestamp,
+			TimeString:  TimeToAlcFormat(record.Timestamp),
+			ValueString: record.RawValue,
+			Value:       value,
+		},
+	}
 }

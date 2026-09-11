@@ -40,9 +40,10 @@ func basicAuth(username, password string) string {
 }
 
 type SoapService struct {
-	Name  string
-	Eval  EvalService
-	Trend TrendService
+	Name     string
+	Eval     EvalService
+	Trend    TrendService
+	F1JTrend F1JTrendService
 
 	httpClient *http.Client
 }
@@ -56,6 +57,15 @@ type EvalService struct {
 }
 
 type TrendService struct {
+	User     string
+	password string
+	Endpoint string
+
+	parent    *SoapService
+	chunkSize int
+}
+
+type F1JTrendService struct {
 	User     string
 	password string
 	Endpoint string
@@ -126,10 +136,17 @@ func NewSoapServiceWithHTTPClient(host string, user string, password string, htt
 			password:  password,
 			chunkSize: 2000,
 		},
+		F1JTrend: F1JTrendService{
+			Endpoint:  host + "_common/webservices/F1JTrendService",
+			User:      user,
+			password:  password,
+			chunkSize: 2000,
+		},
 	}
 
 	service.Eval.parent = service
 	service.Trend.parent = service
+	service.F1JTrend.parent = service
 
 	return service
 }
